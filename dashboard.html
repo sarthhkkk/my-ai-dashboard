@@ -1,486 +1,197 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<!DOCTYPE html><html lang="en" class="dark" id="rootEl"><head>
+<script>(function(){var t=localStorage.getItem('myd-theme');if(t){document.documentElement.className=t}})()</script>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
 <title>My AI Dashboard</title>
-<style>
-  :root {
-    --bg: #212121; --sidebar: #171717; --surface: #2f2f2f;
-    --hover: #3a3a3a; --active: #404040;
-    --text: #ececec; --text-dim: #9e9e9e; --text-muted: #666;
-    --accent: #10a37f; --accent-hover: #0d8c6b;
-    --danger: #ef4444; --danger-hover: #dc2626;
-    --border: #333; --radius: 8px;
-    --user-bg: #2f2f2f; --assistant-bg: #1e1e1e; --tool-bg: #1a2e2a;
-    --code-bg: #111; --font: 'Segoe UI','SF Pro',system-ui,sans-serif;
-    --sidebar-w: 320px; --toast-bg: #333;
-  }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: var(--font); background: var(--bg); color: var(--text); height: 100vh; display: flex; overflow: hidden; }
-  ::-webkit-scrollbar { width: 6px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: #777; }
+<link rel="stylesheet" href="css/style.css"><link rel="stylesheet" href="css/diag.css">
+</head><body><div id="appWrap"><div id="dashboardContent">
+<!-- Decorative glass orbs -->
+<div class="glass-orb" style="position:fixed;top:-120px;right:-80px;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,var(--accent-glow) 0%,transparent 70%);opacity:.3;pointer-events:none;z-index:0"></div>
+<div class="glass-orb" style="position:fixed;bottom:-100px;left:-60px;width:350px;height:350px;border-radius:50%;background:radial-gradient(circle,rgba(124,58,237,0.25) 0%,transparent 70%);pointer-events:none;z-index:0"></div>
+<div class="glass-orb" style="position:fixed;top:40%;left:50%;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(16,163,127,0.1) 0%,transparent 70%);pointer-events:none;z-index:0;transform:translate(-50%,-50%)"></div>
+<!-- Live cursor spotlight -->
+<div id="cursorSpot" style="position:fixed;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(16,163,127,0.08) 0%,transparent 60%);pointer-events:none;z-index:0;transform:translate(-50%,-50%);transition:opacity .4s;opacity:0;will-change:transform"></div>
 
-  .sidebar { width: var(--sidebar-w); min-width: var(--sidebar-w); background: var(--sidebar); display: flex; flex-direction: column; border-right: 1px solid var(--border); }
-  .sidebar-header { padding: 14px 16px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); }
-  .sidebar-header h1 { font-size: 16px; font-weight: 600; flex: 1; letter-spacing: 0.3px; }
-  .new-btn { background: var(--accent); color: #fff; border: none; padding: 6px 14px; border-radius: var(--radius); cursor: pointer; font-size: 13px; font-weight: 500; white-space: nowrap; transition: background 0.15s; }
-  .new-btn:hover { background: var(--accent-hover); }
-  .search-box { margin: 8px 12px; padding: 8px 12px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 13px; outline: none; width: calc(100% - 24px); transition: border-color 0.15s; }
-  .search-box:focus { border-color: var(--accent); }
-  .search-box::placeholder { color: var(--text-muted); }
-  .session-list { flex: 1; overflow-y: auto; padding: 4px 8px; }
-  .session-item { padding: 10px 12px; border-radius: var(--radius); cursor: pointer; margin-bottom: 2px; transition: background 0.15s; border-left: 3px solid transparent; position: relative; }
-  .session-item:hover { background: var(--hover); }
-  .session-item.active { background: var(--active); border-left-color: var(--accent); }
-  .session-item.new-session { animation: fadeIn 0.4s ease; }
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
-  .session-item .title { font-size: 13px; font-weight: 500; margin-bottom: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .session-item .meta { font-size: 11px; color: var(--text-dim); display: flex; gap: 8px; flex-wrap: wrap; }
-  .session-item .meta span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .session-item .tokens { font-size: 10px; color: var(--text-muted); margin-top: 3px; display: flex; gap: 8px; }
-  .session-item .delete-btn { position: absolute; top: 8px; right: 8px; width: 22px; height: 22px; border-radius: 4px; border: none; background: transparent; color: var(--text-muted); cursor: pointer; font-size: 14px; line-height: 22px; text-align: center; opacity: 0; transition: all 0.15s; display: flex; align-items: center; justify-content: center; }
-  .session-item:hover .delete-btn { opacity: 1; }
-  .session-item .delete-btn:hover { background: var(--danger); color: #fff; }
-  .sidebar-footer { padding: 10px 16px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-dim); display: flex; justify-content: space-between; align-items: center; }
-  .sidebar-footer .count { color: var(--accent); font-weight: 500; }
-  .sidebar-footer .refresh-status { font-size: 10px; color: var(--text-muted); }
-
-  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; position: relative; }
-  .main-header { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; min-height: 56px; }
-  .main-header h2 { font-size: 15px; font-weight: 600; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .main-header .info { font-size: 12px; color: var(--text-dim); display: flex; gap: 14px; flex-wrap: wrap; }
-  .main-header .info span { white-space: nowrap; }
-  .sidebar-toggle { display: none; background: none; border: none; color: var(--text); font-size: 22px; cursor: pointer; padding: 2px 6px; border-radius: 4px; transition: background 0.15s; }
-  .sidebar-toggle:hover { background: var(--hover); }
-  .header-actions { display: flex; gap: 6px; align-items: center; }
-  .header-btn { background: none; border: 1px solid var(--border); color: var(--text-dim); padding: 4px 10px; border-radius: var(--radius); cursor: pointer; font-size: 12px; transition: all 0.15s; white-space: nowrap; }
-  .header-btn:hover { background: var(--hover); color: var(--text); }
-  .header-btn.danger:hover { border-color: var(--danger); color: var(--danger); }
-  .header-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-
-  .messages { flex: 1; overflow-y: auto; padding: 0; }
-  .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; color: var(--text-dim); gap: 10px; padding: 40px 20px; text-align: center; }
-  .empty-state .icon { font-size: 48px; opacity: 0.25; }
-  .empty-state p { font-size: 14px; max-width: 360px; line-height: 1.5; }
-
-  .msg { padding: 18px 20px; display: flex; gap: 14px; position: relative; }
-  .msg:hover { background: rgba(255,255,255,0.02); }
-  .msg.user { background: var(--user-bg); }
-  .msg.assistant { background: var(--assistant-bg); }
-  .msg.tool { background: var(--tool-bg); }
-  .msg.reasoning { background: transparent; opacity: 0.55; }
-  .msg.reasoning .content { font-style: italic; font-size: 13px; }
-  .msg .avatar { width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; margin-top: 1px; }
-  .msg.user .avatar { background: #5436da; }
-  .msg.assistant .avatar { background: var(--accent); }
-  .msg.tool .avatar { background: #b8860b; font-size: 13px; }
-  .msg .body { flex: 1; min-width: 0; }
-  .msg .body .label { font-size: 12px; font-weight: 600; margin-bottom: 5px; display: flex; align-items: center; gap: 8px; }
-  .msg .body .label .time { font-weight: 400; color: var(--text-dim); font-size: 11px; }
-  .msg .content { font-size: 14px; line-height: 1.65; overflow-wrap: break-word; white-space: pre-wrap; }
-  .msg .content code { background: var(--code-bg); padding: 1px 5px; border-radius: 3px; font-size: 13px; font-family: 'Cascadia Code','Fira Code','Consolas',monospace; }
-  .msg .content pre { position: relative; background: var(--code-bg); padding: 12px 16px; border-radius: var(--radius); overflow-x: auto; margin: 8px 0; font-size: 13px; font-family: 'Cascadia Code','Fira Code','Consolas',monospace; border: 1px solid var(--border); }
-  .msg .content pre code { background: none; padding: 0; }
-  .msg .content pre .copy-code { position: absolute; top: 6px; right: 6px; background: var(--surface); border: 1px solid var(--border); color: var(--text-dim); padding: 2px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; opacity: 0; transition: opacity 0.15s; }
-  .msg .content pre:hover .copy-code { opacity: 1; }
-  .msg .content pre .copy-code:hover { background: var(--hover); color: var(--text); }
-  .msg.tool .content { font-family: 'Cascadia Code','Fira Code','Consolas',monospace; font-size: 13px; background: rgba(0,0,0,0.25); padding: 10px 14px; border-radius: var(--radius); border-left: 3px solid #b8860b; max-height: 500px; overflow: auto; transition: max-height 0.3s ease; cursor: pointer; }
-  .msg.tool .content.collapsed { max-height: 60px; overflow: hidden; }
-  .msg.tool .content .expand-hint { display: block; font-size: 10px; color: var(--text-muted); margin-top: 4px; }
-  .copy-msg-btn { position: absolute; top: 8px; right: 8px; background: var(--surface); border: 1px solid var(--border); color: var(--text-dim); padding: 2px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; opacity: 0; transition: opacity 0.15s; }
-  .msg:hover .copy-msg-btn { opacity: 1; }
-  .copy-msg-btn:hover { background: var(--hover); color: var(--text); }
-
-  .loading { text-align: center; padding: 40px; color: var(--text-dim); }
-  .loading .spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.6s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  .toast { position: fixed; bottom: 20px; right: 20px; background: var(--toast-bg); color: var(--text); padding: 10px 18px; border-radius: var(--radius); font-size: 13px; box-shadow: 0 4px 20px rgba(0,0,0,0.4); border: 1px solid var(--border); z-index: 100; opacity: 0; transform: translateY(10px); transition: all 0.25s ease; pointer-events: none; }
-  .toast.show { opacity: 1; transform: translateY(0); }
-  .toast.success { border-left: 3px solid var(--accent); }
-  .toast.error { border-left: 3px solid var(--danger); }
-
-  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
-  .modal-overlay.open { opacity: 1; pointer-events: auto; }
-  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; max-width: 400px; width: 90%; box-shadow: 0 8px 40px rgba(0,0,0,0.5); }
-  .modal h3 { font-size: 16px; margin-bottom: 8px; }
-  .modal p { font-size: 13px; color: var(--text-dim); margin-bottom: 20px; line-height: 1.5; }
-  .modal .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
-  .modal .modal-actions button { padding: 8px 18px; border-radius: var(--radius); border: none; cursor: pointer; font-size: 13px; font-weight: 500; transition: background 0.15s; }
-  .modal .modal-actions .cancel { background: var(--hover); color: var(--text); }
-  .modal .modal-actions .cancel:hover { background: var(--active); }
-  .modal .modal-actions .confirm { background: var(--danger); color: #fff; }
-  .modal .modal-actions .confirm:hover { background: var(--danger-hover); }
-
-  .sticky-scroll-btn { position: absolute; bottom: 20px; right: 20px; background: var(--surface); border: 1px solid var(--border); color: var(--text-dim); width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-size: 16px; display: none; align-items: center; justify-content: center; transition: all 0.15s; box-shadow: 0 2px 10px rgba(0,0,0,0.3); z-index: 10; }
-  .sticky-scroll-btn:hover { background: var(--hover); color: var(--text); }
-  .sticky-scroll-btn.show { display: flex; }
-
-  @media (max-width: 768px) {
-    .sidebar { width: 100%; min-width: 0; display: none; position: fixed; left: 0; top: 0; bottom: 0; z-index: 50; width: min(350px, 85vw); }
-    .sidebar.open { display: flex; }
-    .sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 49; }
-    .sidebar-backdrop.show { display: block; }
-    .sidebar-toggle { display: flex; }
-    .main-header .info { font-size: 11px; gap: 8px; }
-    .msg { padding: 14px 16px; gap: 10px; }
-    .msg .content { font-size: 13px; }
-  }
-</style>
-</head>
-<body>
-
-<div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeSidebar()"></div>
+<div class="s-backdrop" id="sBackdrop" onclick="cSidebar()" ontouchstart="cSidebar()"></div>
 
 <div class="sidebar" id="sidebar">
   <div class="sidebar-header">
-    <h1>My AI</h1>
-    <button class="new-btn" onclick="runMyAI()">+ New</button>
+    <h1><span class="dot"></span><span style="-webkit-text-fill-color:var(--accent)">My</span> AI</h1>
+    <div class="s-hdr-actions">
+      <button class="s-theme-btn" id="themeBtn" onclick="tTheme()" title="Toggle dark/light theme">&#9790;</button>
+      <button class="s-new-btn" onclick="runMyAI()" title="Start a new OpenCode session">+ New</button>
+    </div>
   </div>
-  <input class="search-box" id="search" placeholder="Search sessions..." oninput="filterSessions()" spellcheck="false">
-  <div class="session-list" id="sessionList"></div>
-  <div class="sidebar-footer">
-    <span><span class="count" id="sessionCount">0</span> sessions</span>
-    <span class="refresh-status" id="refreshStatus">auto-refresh on</span>
+  <div class="s-nav" id="sNav">
+    <button class="s-nav-btn active" data-view="chats" onclick="switchView('chats')" title="Browse and search all your AI chat sessions">&#128172; Chats <span class="badge" id="chatsBadge"></span></button>
+    <button class="s-nav-btn" data-view="research" onclick="switchView('research')" title="Research knowledge base with timeline and search">&#128214; Research <span class="badge" id="researchBadge"></span></button>
+    <button class="s-nav-btn" data-view="uploads" onclick="switchView('uploads')" title="View uploaded screenshots">&#128247; Uploads</button>
+
+  </div>
+  <label for="sSearch" class="sr-only">Search sessions</label><input class="s-search" id="sSearch" placeholder="Search sessions..." oninput="filterSessions()" spellcheck="false" title="Type to filter sessions by title, model, agent, or tags">
+  <div id="chatsFilterArea">
+    <div class="s-filter-bar" id="sFilterBar">
+      <label for="sModelFilter" class="sr-only">Filter by model</label><select class="s-filter" id="sModelFilter" onchange="filterSessions()" title="Filter sessions by AI model used"><option value="">All models</option></select>
+      <label for="sAgentFilter" class="sr-only">Filter by agent</label><select class="s-filter" id="sAgentFilter" onchange="filterSessions()" title="Filter sessions by agent type (build, explore, etc.)"><option value="">All agents</option></select>
+      <label for="sProjectFilter" class="sr-only">Filter by project</label><select class="s-filter" id="sProjectFilter" onchange="filterSessions()" title="Filter sessions by project/workspace"><option value="">All projects</option></select>
+    </div>
+    <div class="s-date-bar" id="sDateBar">
+      <button class="s-date-btn" data-range="" onclick="setDateRange(this)" title="Show sessions from all time">All time</button>
+      <button class="s-date-btn" data-range="today" onclick="setDateRange(this)" title="Show only today's sessions">Today</button>
+      <button class="s-date-btn" data-range="7d" onclick="setDateRange(this)" title="Show sessions from the last 7 days">7 days</button>
+      <button class="s-date-btn" data-range="30d" onclick="setDateRange(this)" title="Show sessions from the last 30 days">30 days</button>
+      <button class="s-date-btn s-date-bm" data-range="bookmarked" onclick="setDateRange(this)" title="Show only bookmarked sessions">&#9733;</button>
+    </div>
+  </div>
+  <div class="s-views" id="sViews">
+    <div class="s-view active" id="viewChats"><div class="s-groups" id="sGroups"></div></div>
+    <div class="s-view" id="viewUploads">
+      <div class="uploads-hdr">Screenshots</div>
+      <div class="uploads-grid" id="uploadsGrid"></div>
+    </div>
+    <div class="s-view" id="viewResearch">
+      <div class="research-hdr">Research Knowledge</div>
+      <div class="research-toolbar">
+        <label for="researchSearch" class="sr-only">Search research</label><input class="s-search" id="researchSearch" placeholder="Search research..." oninput="filterResearch()" spellcheck="false" style="flex:1;margin:0" title="Search across all research entries">
+        <button class="m-btn" onclick="refreshResearch()" title="Extract new knowledge from sessions">&#8635; Sync</button>
+      </div>
+      <div class="research-filter-bar" id="researchFilterBar">
+        <label for="researchTagFilter" class="sr-only">Filter by tag</label><select class="s-filter" id="researchTagFilter" onchange="filterResearch()" title="Filter by tag"><option value="">All tags</option></select>
+        <label for="researchProjectFilter" class="sr-only">Filter by project</label><select class="s-filter" id="researchProjectFilter" onchange="filterResearch()" title="Filter by project"><option value="">All projects</option></select>
+        <button class="s-date-btn" data-view="list" onclick="tResearchView(this)" id="rViewList" title="List view">&#9776;</button>
+        <button class="s-date-btn active" data-view="timeline" onclick="tResearchView(this)" id="rViewTimeline" title="Timeline view">&#128197;</button>
+      </div>
+      <div id="researchContent"></div>
+    </div>
+  </div>
+  <div class="s-footer">
+    <span><span id="sCount">0</span> sessions</span>
+    <div class="s-footer-actions">
+      <button onclick="exportAllData()" title="Export all">&#128229;</button>
+      <button onclick="openSettings()" title="Settings">&#9881;</button>
+      <label class="s-upload-btn" title="Upload screenshot from phone">
+        &#128247;
+        <input type="file" accept="image/*" style="display:none" onchange="uploadScreenshot(this)">
+      </label>
+      <button onclick="openDiag()" title="Diagnostic report (Ctrl+Shift+D)" style="background:none;border:none;color:var(--text-dim);padding:2px 4px;cursor:pointer;font-size:13px;line-height:1;transition:color .15s" onmouseenter="this.style.color='var(--accent)'" onmouseleave="this.style.color='var(--text-dim)'">&#128295;</button>
+<button onclick="doLogout()" title="Sign out" style="background:none;border:none;color:var(--text-dim);padding:2px 4px;cursor:pointer;font-size:13px;line-height:1;transition:color .15s" onmouseenter="this.style.color='var(--danger)'" onmouseleave="this.style.color='var(--text-dim)'">&#9888;</button>
+    </div>
+    <a href="https://github.com/sarthhkkk" target="_blank" style="color:var(--text-dim);text-decoration:none;font-size:10px;white-space:nowrap" title="GitHub profile">&#128279; GitHub</a>
   </div>
 </div>
 
 <div class="main">
-  <div class="main-header">
-    <button class="sidebar-toggle" onclick="toggleSidebar()">&#9776;</button>
-    <h2 id="mainTitle">Select a session</h2>
-    <div class="info" id="mainInfo"></div>
-    <div class="header-actions" id="headerActions" style="display:none;">
-      <button class="header-btn" onclick="scrollToBottom()" title="Scroll to bottom">&#8595;</button>
-      <button class="header-btn danger" onclick="confirmDelete()" title="Delete session">&#128465;</button>
+  <div class="m-header">
+    <button class="m-toggle" onclick="tSidebar()" style="display:none" id="sidebarToggle" title="Toggle sidebar navigation">&#9776;</button>
+    <h2 id="mTitle" ondblclick="startRename()">Select a session</h2>
+    <div class="m-info" id="mInfo"></div>
+    <div class="m-actions" id="mActions" style="display:none">
+      <button class="m-btn" id="searchToggle" onclick="tMsgSearch()" title="Search within session messages (Ctrl+F)">&#128269;</button>
+      <button class="m-btn" id="expandToggle" onclick="tExpandAll()" title="Expand or collapse all tool call messages">&#8660;</button>
+      <button class="m-btn" id="denseToggle" onclick="tDense()" title="Toggle compact message view">&#9776;</button>
+      <button class="m-btn" id="refreshToggle" onclick="tAutoRefresh()" title="Toggle periodic auto-refresh of data">&#8635;</button>
+      <button class="m-btn" onclick="tPanel()" id="panelToggle" title="Open session info panel">&#8505;</button>
+      <button class="m-btn" onclick="openCompare()" id="compareToggle" title="Compare two sessions side by side">&#8801;</button>
+      <button class="m-btn danger" onclick="confirmDelete()" title="Delete this session permanently">&#128465;</button>
     </div>
   </div>
-  <div class="messages" id="messages" onscroll="onMsgScroll()">
-    <div class="empty-state">
-      <div class="icon">&#128172;</div>
-      <p>Select a session from the sidebar to view the conversation, or start a new one.</p>
+  <div class="msg-search-wrap" id="msgSearchWrap">
+    <label for="msgSearch" class="sr-only">Search messages</label><input id="msgSearch" placeholder="Search in messages..." oninput="filterMessages()" spellcheck="false" title="Type to search within this session's messages">
+    <span class="ms-count" id="msgSearchCount"></span>
+    <button class="ms-close" onclick="cMsgSearch()" title="Close message search">&times;</button>
+  </div>
+  <div class="msgs-wrap" id="msgsWrap">
+    <div class="msgs" id="msgs">
+      <div class="empty" id="emptyState">
+        <div style="width:72px;height:72px;border-radius:50%;background:var(--glass-bg);backdrop-filter:blur(20px);border:1px solid var(--glass-border);display:flex;align-items:center;justify-content:center;font-size:32px;margin-bottom:12px;box-shadow:0 8px 32px rgba(0,0,0,0.2)">&#10024;</div>
+        <p style="font-size:16px;font-weight:500;color:var(--text);margin-bottom:4px">Welcome to My AI Dashboard</p>
+        <p style="font-size:13px;color:var(--text-dim);font-weight:400;max-width:360px;line-height:1.6;margin-bottom:20px">Pick a session from the sidebar or create a new one to get started.</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
+          <button onclick="switchView('home')" style="background:var(--glass-bg);border:1px solid var(--glass-border);color:var(--text);padding:8px 18px;border-radius:var(--radius-sm);cursor:pointer;font-size:12px;transition:all .2s;backdrop-filter:blur(12px)" title="Go to the Home dashboard with stats and charts">&#128202; View Stats</button>
+          <button onclick="runMyAI()" style="background:linear-gradient(135deg,var(--accent),#0d8c6b);border:none;color:#fff;padding:8px 18px;border-radius:var(--radius-sm);cursor:pointer;font-size:12px;font-weight:600;transition:all .2s;box-shadow:0 2px 12px var(--accent-glow)" title="Launch a new OpenCode AI session">+ New Session</button>
+        </div>
+        <div id="emptyRecent" style="margin-top:24px;width:100%;max-width:420px"></div>
+      </div>
+    </div>
+    <button class="scroll-bottom" id="scrollBottom" onclick="scrollToBottom()" title="Scroll to bottom">&#709;</button>
+  </div>
+  <div class="pipeline-main" id="pipelineMain">
+    <div class="pipeline-hdr">Pipeline <span id="pipelineDot" class="pulse-dot green"></span></div>
+    <div id="pipelineSvg"></div>
+  </div>
+  <div class="diag-main" id="diagMain">
+    <div class="diag-hdr">Diagnostic Report <button class="diag-copy" id="diagCopyBtn" onclick="copyDiagReport()">&#128203; Copy Report</button><button class="diag-close" onclick="switchView('chats')" title="Close">&times;</button></div>
+    <div id="diagContent"></div>
+  </div>
+</div>
+
+<div class="panel" id="panel">
+  <div class="p-hdr"><h3>Session Info</h3><button class="p-close" onclick="tPanel()" title="Close info panel">&times;</button></div>
+  <div class="p-body" id="pBody">
+    <div class="p-section" id="pStats"></div>
+    <div class="p-section" id="pFiles" style="display:none">
+      <h4>Files Changed</h4>
+      <div id="pFileList"></div>
+    </div>
+    <div class="p-section" id="pSessionTodos" style="display:none">
+      <h4>Tasks <span id="pTodoCount"></span></h4>
+      <div id="pTodoList"></div>
+    </div>
+      <div class="p-section" id="pSessionTags" style="display:none">
+      <h4>Tags</h4>
+      <div id="pTagList" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px"></div>
+      <div style="display:flex;gap:4px">
+        <label for="pTagInput" class="sr-only">Add tag</label><input class="p-rename-input" id="pTagInput" placeholder="Add tag..." style="margin:0;font-size:11px;flex:1" onkeydown="if(event.key==='Enter')addTag()" title="Type a tag name and press Enter to add">
+        <button class="m-btn" onclick="addTag()" style="font-size:10px" title="Add tag to this session">+</button>
+      </div>
+    </div>
+    <div class="p-section" id="pHealthScore" style="display:none">
+      <h4>Health Score</h4>
+      <div id="pHealthContent" style="display:flex;align-items:center;gap:14px"></div>
+    </div>
+    <div class="p-section" id="pSessionMemory" style="display:none">
+      <h4>Memory Log</h4>
+      <div id="pMemoryList"></div>
+    </div>
+    <div class="p-section">
+      <h4>Token Usage</h4><div id="pTokens"></div>
+    </div>
+    <div class="p-section">
+      <h4>Auto-Refresh</h4>
+      <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">
+        <label for="pRefreshInterval" style="font-size:12px;color:var(--text-dim)">Every</label>
+        <input type="number" id="pRefreshInterval" value="30" min="5" max="300" style="width:60px;background:var(--glass-bg);border:1px solid var(--glass-border);color:var(--text);padding:3px 6px;border-radius:var(--radius-sm);font-size:12px;outline:none">
+        <span style="font-size:12px;color:var(--text-dim)">s</span>
+        <button class="m-btn" onclick="tAutoRefresh()" id="pRefreshBtn" title="Toggle auto-refresh on/off">On</button>
+      </div>
+    </div>
+    <div class="p-section">
+      <h4>Export</h4>
+      <div class="p-export">
+        <button onclick="exportSession('json')" title="Export session as structured JSON">JSON</button>
+        <button onclick="exportSession('markdown')" title="Export session as Markdown document">Markdown</button>
+        <button onclick="exportSession('text')" title="Export session as plain text">Text</button>
+      </div>
+    </div>
+    <div class="p-section">
+      <h4>Rename</h4>
+      <label for="pRename" class="sr-only">Rename session</label><input class="p-rename-input" id="pRename" placeholder="New title..." onkeydown="if(event.key==='Enter')doRename()">
+      <div style="margin-top:4px"><button class="m-btn" onclick="doRename()" style="font-size:11px" title="Save the new session title">Save</button></div>
     </div>
   </div>
-  <button class="sticky-scroll-btn" id="scrollBtn" onclick="scrollToBottom()">&#8595;</button>
 </div>
 
 <div class="toast" id="toast"></div>
-
 <div class="modal-overlay" id="modalOverlay">
-  <div class="modal">
-    <h3>Delete session?</h3>
+  <div class="modal-b" id="modalBody">
+    <h3 id="modalTitle">Delete session?</h3>
     <p id="modalMsg">This will permanently delete this session and all its messages.</p>
-    <div class="modal-actions">
-      <button class="cancel" onclick="closeModal()">Cancel</button>
-      <button class="confirm" onclick="doDelete()">Delete</button>
+    <div class="modal-acts" id="modalActs">
+      <button class="mcancel" onclick="cModal()">Cancel</button>
+      <button class="mcon" onclick="doDelete()">Delete</button>
     </div>
   </div>
 </div>
 
-<script>
-let sessions = [];
-let currentSession = null;
-let deleteTargetId = null;
-let refreshInterval = null;
-let isAtBottom = true;
-let autoRefresh = true;
-
-async function fetchJSON(url) {
-  const r = await fetch(url);
-  if (!r.ok) throw new Error('HTTP ' + r.status);
-  return r.json();
-}
-
-function formatTime(epoch) {
-  const d = new Date(Number(epoch));
-  return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-}
-
-function timeAgo(epoch) {
-  const diff = Date.now() - Number(epoch);
-  if (diff < 0) return 'just now';
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return mins + 'm ago';
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return hrs + 'h ago';
-  const days = Math.floor(hrs / 24);
-  if (days < 30) return days + 'd ago';
-  return Math.floor(days / 30) + 'mo ago';
-}
-
-function escapeHtml(text) {
-  if (!text) return '';
-  const d = document.createElement('div');
-  d.textContent = text;
-  return d.innerHTML;
-}
-
-function renderContent(text) {
-  if (!text) return '';
-  let t = escapeHtml(text);
-  t = t.replace(/```(\w*)\n?([\s\S]*?)```/g, function(_, lang, code) {
-    return '<pre><code>' + code.trim() + '</code><button class="copy-code" onclick="copyText(\'' + escapeHtml(code.trim()).replace(/'/g, "\\'") + '\',this)">Copy</button></pre>';
-  });
-  t = t.replace(/`([^`]+)`/g, '<code>$1</code>');
-  t = t.replace(/\n/g, '<br>');
-  return t;
-}
-
-function getAvatar(role) {
-  if (role === 'user') return '&#128100;';
-  if (role === 'tool') return '&#128295;';
-  return '&#129302;';
-}
-
-function getLabel(role) {
-  if (role === 'user') return 'You';
-  if (role === 'tool') return 'Tool';
-  return 'Assistant';
-}
-
-function toast(msg, type) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.className = 'toast ' + (type || '') + ' show';
-  setTimeout(function() { el.classList.remove('show'); }, 2500);
-}
-
-function closeSidebar() {
-  document.getElementById('sidebar').classList.remove('open');
-  document.getElementById('sidebarBackdrop').classList.remove('show');
-}
-
-function toggleSidebar() {
-  document.getElementById('sidebar').classList.toggle('open');
-  document.getElementById('sidebarBackdrop').classList.toggle('show');
-}
-
-async function loadSessions() {
-  try {
-    const list = await fetchJSON('/api/sessions');
-    const oldIds = new Set(sessions.map(function(s) { return s.id; }));
-    const isNew = function(s) { return !oldIds.has(s.id) && oldIds.size > 0; };
-    sessions = list;
-    renderSessions(sessions);
-    document.getElementById('sessionCount').textContent = sessions.length;
-    if (isNew(list[0]) && autoRefresh) {
-      toast('New session: ' + (list[0].title || 'Untitled'), 'success');
-    }
-  } catch (e) {
-    document.getElementById('sessionCount').textContent = 'err';
-  }
-}
-
-function renderSessions(list) {
-  const el = document.getElementById('sessionList');
-  el.innerHTML = list.map(function(s) {
-    const active = currentSession && currentSession.id === s.id ? 'active' : '';
-    const created = s.time_created ? timeAgo(s.time_created) : '';
-    const ts = [];
-    if (s.tokens_input) ts.push(Number(s.tokens_input).toLocaleString() + ' in');
-    if (s.tokens_output) ts.push(Number(s.tokens_output).toLocaleString() + ' out');
-    const tokStr = ts.length ? '<div class="tokens">' + ts.join(' &middot; ') + '</div>' : '';
-    const costStr = s.cost ? '<span>$' + parseFloat(s.cost).toFixed(4) + '</span>' : '';
-    return '<div class="session-item ' + active + '" data-id="' + s.id + '">' +
-      '<div class="title" onclick="selectSession(\'' + s.id + '\')">' + escapeHtml(s.title || 'Untitled') + '</div>' +
-      '<div class="meta" onclick="selectSession(\'' + s.id + '\')">' +
-        (created ? '<span>' + created + '</span>' : '') +
-        (s.model ? '<span>' + escapeHtml(s.model) + '</span>' : '') +
-        costStr +
-      '</div>' + tokStr +
-      '<button class="delete-btn" onclick="event.stopPropagation();confirmDelete(\'' + s.id + '\')" title="Delete">&#10005;</button>' +
-      '</div>';
-  }).join('');
-}
-
-function filterSessions() {
-  const q = document.getElementById('search').value.toLowerCase();
-  const filtered = sessions.filter(function(s) {
-    const title = (s.title || '').toLowerCase();
-    const model = (s.model || '').toLowerCase();
-    return title.includes(q) || model.includes(q);
-  });
-  renderSessions(filtered);
-}
-
-async function selectSession(id) {
-  if (currentSession && currentSession.id === id) return;
-  currentSession = { id: id };
-  renderSessions(sessions);
-  closeSidebar();
-  document.getElementById('messages').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
-  document.getElementById('headerActions').style.display = 'none';
-
-  try {
-    const [session, msgs] = await Promise.all([
-      fetchJSON('/api/session/' + id),
-      fetchJSON('/api/messages/' + id)
-    ]);
-
-    currentSession = session || { id: id };
-    document.getElementById('mainTitle').textContent = session ? escapeHtml(session.title || 'Untitled') : 'Untitled';
-
-    const infoEl = document.getElementById('mainInfo');
-    if (session) {
-      var parts = [];
-      if (session.created_at) parts.push('<span>' + session.created_at + '</span>');
-      if (session.model) parts.push('<span>' + escapeHtml(session.model) + '</span>');
-      if (session.agent) parts.push('<span>' + escapeHtml(session.agent) + '</span>');
-      if (session.cost && parseFloat(session.cost) > 0) parts.push('<span>$' + parseFloat(session.cost).toFixed(4) + '</span>');
-      if (session.tokens_input) parts.push('<span>' + Number(session.tokens_input).toLocaleString() + ' in</span>');
-      if (session.tokens_output) parts.push('<span>' + Number(session.tokens_output).toLocaleString() + ' out</span>');
-      infoEl.innerHTML = parts.join('');
-    } else {
-      infoEl.innerHTML = '';
-    }
-    document.getElementById('headerActions').style.display = 'flex';
-
-    const msgEl = document.getElementById('messages');
-    if (!msgs || msgs.length === 0) {
-      msgEl.innerHTML = '<div class="empty-state"><p>No messages in this session yet.</p></div>';
-      renderSessions(sessions);
-      return;
-    }
-
-    msgEl.innerHTML = msgs.map(function(m, idx) {
-      var role = m.role || 'assistant';
-      var type = m.part_type || 'text';
-      var displayRole = type === 'tool' || type === 'tool-result' ? 'tool' : role;
-      var isReasoning = type === 'reasoning';
-      var cls = isReasoning ? 'reasoning' : displayRole;
-      var time = m.msg_time ? formatTime(m.msg_time) : '';
-      var content = renderContent(m.text || '(empty)');
-
-      var extra = '';
-      if (displayRole === 'tool') {
-        var collapsed = idx < msgs.length - 3 ? ' collapsed' : '';
-        extra = ' onclick="toggleTool(this)"';
-        content = '<div class="content' + collapsed + '"' + extra + '>' + content + '<span class="expand-hint">' + (collapsed ? '&#9654; expand' : '&#9660; collapse') + '</span></div>';
-      } else {
-        content = '<div class="content">' + content + '</div>';
-      }
-
-      return '<div class="msg ' + cls + '" data-idx="' + idx + '">' +
-        '<div class="avatar">' + getAvatar(displayRole) + '</div>' +
-        '<div class="body">' +
-          '<div class="label">' + getLabel(displayRole) + ' <span class="time">' + time + '</span></div>' +
-          content +
-        '</div>' +
-        '<button class="copy-msg-btn" onclick="copyMsg(this)" title="Copy message">Copy</button>' +
-        '</div>';
-    }).join('');
-
-    msgEl.scrollTop = msgEl.scrollHeight;
-    isAtBottom = true;
-    renderSessions(sessions);
-  } catch (e) {
-    document.getElementById('messages').innerHTML = '<div class="empty-state"><p>Error loading session: ' + escapeHtml(e.message) + '</p></div>';
-  }
-}
-
-function toggleTool(el) {
-  el.classList.toggle('collapsed');
-  var hint = el.querySelector('.expand-hint');
-  if (hint) hint.textContent = el.classList.contains('collapsed') ? '\u25B6 expand' : '\u25BC collapse';
-}
-
-function copyMsg(btn) {
-  const msg = btn.closest('.msg');
-  const content = msg.querySelector('.content');
-  copyText(content.textContent.trim(), btn);
-}
-
-function copyText(text, el) {
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(function() {
-      var orig = el.textContent;
-      el.textContent = 'Copied!';
-      setTimeout(function() { el.textContent = orig; }, 1500);
-      toast('Copied to clipboard', 'success');
-    }).catch(function() {
-      fallbackCopy(text, el);
-    });
-  } else {
-    fallbackCopy(text, el);
-  }
-}
-
-function fallbackCopy(text, el) {
-  const ta = document.createElement('textarea');
-  ta.value = text;
-  ta.style.position = 'fixed'; ta.style.left = '-9999px';
-  document.body.appendChild(ta);
-  ta.select();
-  try {
-    document.execCommand('copy');
-    var orig = el.textContent;
-    el.textContent = 'Copied!';
-    setTimeout(function() { el.textContent = orig; }, 1500);
-    toast('Copied to clipboard', 'success');
-  } catch (e) {
-    toast('Copy failed', 'error');
-  }
-  document.body.removeChild(ta);
-}
-
-function confirmDelete(id) {
-  deleteTargetId = id || (currentSession && currentSession.id);
-  if (!deleteTargetId) return;
-  document.getElementById('modalMsg').textContent = 'Are you sure you want to delete "' + escapeHtml(currentSession.title || 'this session') + '"? This cannot be undone.';
-  document.getElementById('modalOverlay').classList.add('open');
-}
-
-function closeModal() {
-  document.getElementById('modalOverlay').classList.remove('open');
-  deleteTargetId = null;
-}
-
-async function doDelete() {
-  if (!deleteTargetId) return;
-  const id = deleteTargetId;
-  closeModal();
-  try {
-    await fetch('/api/session/' + id, { method: 'DELETE' });
-    toast('Session deleted', 'success');
-    if (currentSession && currentSession.id === id) {
-      currentSession = null;
-      document.getElementById('mainTitle').textContent = 'Select a session';
-      document.getElementById('mainInfo').innerHTML = '';
-      document.getElementById('headerActions').style.display = 'none';
-      document.getElementById('messages').innerHTML = '<div class="empty-state"><div class="icon">&#128172;</div><p>Session deleted. Select another session.</p></div>';
-    }
-    await loadSessions();
-  } catch (e) {
-    toast('Delete failed: ' + e.message, 'error');
-  }
-  deleteTargetId = null;
-}
-
-function scrollToBottom() {
-  const el = document.getElementById('messages');
-  el.scrollTop = el.scrollHeight;
-  isAtBottom = true;
-  document.getElementById('scrollBtn').classList.remove('show');
-}
-
-function onMsgScroll() {
-  const el = document.getElementById('messages');
-  var threshold = 100;
-  isAtBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - threshold;
-  document.getElementById('scrollBtn').classList.toggle('show', !isAtBottom && el.scrollHeight > el.clientHeight + 50);
-}
-
-function runMyAI() {
-  window.open('opencode://', '_blank');
-  toast('Opening My AI...', 'success');
-}
-
-loadSessions();
-refreshInterval = setInterval(loadSessions, 30000);
-</script>
-</body>
-</html>
+<script src="js/diag.js"></script>
+<script src="js/app.js"></script>
+</div></div></body></html>

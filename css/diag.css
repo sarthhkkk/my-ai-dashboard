@@ -1,0 +1,5 @@
+/* opencode-diagnostic styles — standalone */
+#__diagOv *{box-sizing:border-box}
+#__diagOv button{cursor:pointer;transition:all .2s}
+#__diagOv button:hover{opacity:.85;transform:translateY(-1px)}
+#__diagOv #__diagCopy:hover{background:rgba(16,163,127,0.2)!important;border-color:rgba(16,163,127,0.4)!important;color:#10a37f!important}

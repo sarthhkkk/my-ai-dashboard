@@ -1,0 +1,8 @@
+auth.json
+login-log.json
+knowledge.json
+chat.json
+node_modules/
+uploads/
+screenshot_*.png
+*.log
